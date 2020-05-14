@@ -4,6 +4,11 @@ const cors = require("cors");
 const path = require("path");
 const got = require("got");
 const dotenv = require("dotenv");
+var FormData = require('form-data');
+var fs = require('fs');
+var http = require('http');
+var request = require('request');
+
 
 dotenv.config();
 const port = 3000;
@@ -16,17 +21,18 @@ let access_token = process.env.ACCESS_TOKEN;
 app.use(bodyParser.json());
 app.use(cors());
 
-const authorize = async (req, res) => {
+const getApplication = async (req, res) => {
   try {
-    const result = await got.get("https://msp-phac.smapply.io/api/tasks/", {
+    // https://msp-phac.smapply.io/api/applications/
+    // 107437110 17806957
+    const result = await got.get("https://msp-phac.smapply.io/api/applications/17806957/tasks/", {
       responseType: 'json',
+      // curl -H "Authorization: Bearer <ACCESS_TOKEN>" <YOUR_SITE>/api/
       headers: {
         Authorization: `Bearer ${access_token}`,
       }
     })
     const body = result.body;
-
-    console.log(body);
     res.json(body);
   } catch (error) {
     console.log(error);
@@ -34,30 +40,41 @@ const authorize = async (req, res) => {
   }
 }
 
-// curl -H "Authorization: Bearer <ACCESS_TOKEN>" <YOUR_SITE>/api/
-const exampleFunc = async (req, res) => {
-  try {
-    const result = await got.post("https://msp-phac.smapply.io/api/o/token/", {
-      json: {
-        grant_type: "refresh_token",
-        client_id,
-        client_secret,
-        refresh_token,
-      },
-      responseType: "json",
-    });
-    const body = result.body;
+const refreshTokens = () => {
+  var options = {
+    'method': 'POST',
+    'url': 'https://msp-phac.smapply.io/api/o/token/',
+    'headers': {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Cookie': 'sessionid=oawurvgmdftc04g2593mtsjahdaigyn5'
+    },
+    form: {
+      'client_id': client_id,
+      'client_secret': client_secret,
+      'refresh_token': refresh_token,
+      'grant_type': 'refresh_token'
+    }
+  };
+  request(options, function (error, response) { 
+    if (error) throw new Error(error);
+    const data = JSON.parse(response.body);
+    console.log(data);
+    // console.log(response.body.refresh_token);
 
-    console.log(body);
-    res.json(body);
-  } catch (error) {
-    console.log(error);
-    res.send(error);
-  }
+    // const envData = {
+    //   client_id,
+    //   client_secret,
+    //   refresh_token
+    // }
+    // fs.writeFile('.env', 'abc', (err) => {
+    //   if (err) throw err;
+    //   console.log('.env changed!');
+    // });
+  });
 };
 
-app.get("/api_auth", authorize);
-app.get("/api", exampleFunc);
+app.get("/api_application", getApplication);
+app.get("/api_refresh", refreshTokens);
 app.use(express.static("public"));  //make available to browser these files without additional request
 app.get("/*", (req, res) => {       //all other routes - default route
   res.sendFile(path.join(__dirname, "public", "index.html"));
