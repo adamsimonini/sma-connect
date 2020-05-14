@@ -58,18 +58,17 @@ const refreshTokens = () => {
   request(options, function (error, response) { 
     if (error) throw new Error(error);
     const data = JSON.parse(response.body);
-    console.log(data);
-    // console.log(response.body.refresh_token);
+    console.log(data.refresh_token);
+    console.log(data.access_token);
 
-    // const envData = {
-    //   client_id,
-    //   client_secret,
-    //   refresh_token
-    // }
-    // fs.writeFile('.env', 'abc', (err) => {
-    //   if (err) throw err;
-    //   console.log('.env changed!');
-    // });
+    refresh_token = data.refresh_token;
+    access_token = data.access_token;
+
+    const envData = `CLIENT_ID=${client_id}\nCLIENT_SECRET=${client_secret}\nREFRESH_TOKEN=${refresh_token}\nACCESS_TOKEN=${access_token}` 
+    fs.writeFile('.env', envData, (err) => {
+      if (err) throw err;
+      console.log('.env variables changed!');
+    });
   });
 };
 
